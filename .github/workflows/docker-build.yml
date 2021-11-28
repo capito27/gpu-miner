@@ -3,7 +3,7 @@ name: Build and publish docker image
 
 on:
   release:
-    types: [published]
+    types: [released]
 
 jobs:
   buildx_and_push_to_registry:
