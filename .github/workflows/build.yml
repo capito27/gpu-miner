@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     # If both artifacts were built properly and this is a tag
     if: ${{ needs.build-linux-artifact.result == 'success' && needs.build-linux-artifact.result == 'success' && startsWith(github.ref, 'refs/tags/') }}
-    needs: [build-linux-artifact, build-linux-artifact]
+    needs: [build-linux-artifact, build-windows-artifact]
     steps:
       - name: Get linux artifact
         uses: actions/download-artifact@v2
