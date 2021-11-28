@@ -32,7 +32,6 @@ jobs:
   build-windows-artifact:
     name: build-windows-artifact
     runs-on: windows-latest
-    needs: build-linux-artifact
     steps:
       - uses: actions/checkout@v2
         with:
@@ -77,16 +76,25 @@ jobs:
         with:
           name: windows-binary
           path: bin/gpu-miner_*.exe
-
-      - name: Get linux artifact (Release prep)
-        if: startsWith(github.ref, 'refs/tags/')
+  
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    # If both artifacts were built properly and this is a tag
+    if: ${{ needs.build-linux-artifact.result == 'success' && needs.build-linux-artifact.result == 'success' && startsWith(github.ref, 'refs/tags/') }}
+    needs: [build-linux-artifact, build-linux-artifact]
+    steps:
+      - name: Get linux artifact
         uses: actions/download-artifact@v2
         with:
           name: linux-binary
-          path: bin/
+              
+      - name: Get Windows artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: windows-binary
 
       - name: Get the version (Release prep)
-        if: startsWith(github.ref, 'refs/tags/')
         id: get_version
         run: |
           version=$(echo ${GITHUB_REF/refs\/tags\//} | cut -c 2-)
@@ -94,22 +102,19 @@ jobs:
         shell: bash
 
       - name: Generate miners checksums (Release prep)
-        if: startsWith(github.ref, 'refs/tags/')
         run: |
-             $fileName = git rev-parse --short HEAD
-             $hash = Get-FileHash -Algorithm SHA256 "bin/gpu-miner.exe" | Select -ExpandProperty "Hash"
-             Write-Output $hash.ToLower()"alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe" | Out-File -FilePath "bin\alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe.checksum"
-             mv "bin/gpu-miner.exe" "bin\alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe"
-             $hash = Get-FileHash -Algorithm SHA256 "bin\gpu-miner_$fileName" | Select -ExpandProperty "Hash"
-             Write-Output $hash.ToLower()"alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux" | Out-File -FilePath "bin\alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux.checksum"
-             mv "bin\gpu-miner_$fileName" "bin\alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux"
-             dir bin
+             filename=$(git rev-parse --short HEAD)
+             mv "gpu-miner_$filename" "alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux"
+             mv "gpu-miner_$filename.exe" "alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe"
+             sha256sum "alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux" > "alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux.checksum"
+             sha256sum "alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe" > "alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe.checksum"
+             ls -la
+             
       - name: Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            bin\alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux
-            bin\alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux.checksum
-            bin\alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe
-            bin\alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe.checksum
+            alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux
+            alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-linux.checksum
+            alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe
+            alephium-${{ steps.get_version.outputs.VERSION }}-cuda-miner-windows.exe.checksum
