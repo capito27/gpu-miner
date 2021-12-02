@@ -23,7 +23,7 @@
     }
 
 // Only use the original blake on linux 1xxx cards
-#if __CUDA_ARCH__ == 750 && !defined (_WIN32)
+#if __CUDA_ARCH__ == 610 && !defined (_WIN32)
 #include "blake3/original-blake.h"
 #else
 #include "blake3/inlined-blake.h"
