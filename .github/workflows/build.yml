@@ -43,6 +43,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64
+          toolset: 17.0
 
       - uses: Jimver/cuda-toolkit@v0.2.5
         id: cuda-toolkit
