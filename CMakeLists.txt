@@ -1,6 +1,13 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(gpu-miner LANGUAGES CXX CUDA)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+project(gpu-miner LANGUAGES CXX)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
+
+# Setup cuda properly
+find_package(CUDAToolkit)
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES "OFF")
+endif()
+enable_language(CUDA)
 
 # Add miner version at compile time, priority is tag, short hash and finally unknown
 find_package(Git)
