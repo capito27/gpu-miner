@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
-project(gpu-miner LANGUAGES CXX)
+project(gpu-miner LANGUAGES CXX CUDA)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 # Setup cuda properly
 find_package(CUDAToolkit)
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES "OFF")
+if(NOT DEFINED CMAKE_CUDA_STANDARD)
+    set(CMAKE_CUDA_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
-enable_language(CUDA)
 
 # Add miner version at compile time, priority is tag, short hash and finally unknown
 find_package(Git)
@@ -47,8 +47,8 @@ conan_cmake_run(REQUIRES libuv/1.42.0
 
 # Target definitions
 add_executable(gpu-miner src/main.cu)
-set_property(TARGET gpu-miner PROPERTY CXX_STANDARD 11)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+set_property(TARGET gpu-miner PROPERTY CUDA_ARCHITECTURES OFF)
 target_compile_definitions(gpu-miner PUBLIC MINER_VERSION="${miner-version}")
 target_link_libraries(gpu-miner PRIVATE ${CONAN_LIBS})
 #Copy binary to bin directory

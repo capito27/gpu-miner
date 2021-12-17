@@ -236,7 +236,7 @@ void on_read(uv_stream_t *server, ssize_t nread, const uv_buf_t *buf)
 {
     if (nread < 0)
     {
-        fprintf(stderr, "error on_read %ld: might be that the full node is not synced, or miner wallets are not setup\n", nread);
+        fprintf(stderr, "error on_read %zu: might be that the full node is not synced, or miner wallets are not setup\n", nread);
         exit(1);
     }
 
