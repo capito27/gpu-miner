@@ -55,11 +55,7 @@ std::mutex write_mutex;
 uint8_t write_buffer[4096 * 1024];
 void submit_new_block(mining_worker_t *worker)
 {
-    if (!expire_template_for_new_block(load_worker__template(worker)))
-    {
-        printf("mined a parallel block, will not submit\n");
-        return;
-    }
+    expire_template_for_new_block(load_worker__template(worker));
 
     const std::lock_guard<std::mutex> lock(write_mutex);
 
@@ -139,8 +135,6 @@ void worker_stream_callback(cudaStream_t stream, cudaError_t status, void *data)
     free_template(template_ptr);
     worker->async.data = worker;
     uv_async_send(&(worker->async));
-
-
 }
 
 void start_mining()
@@ -250,28 +244,26 @@ void on_read(uv_stream_t *server, ssize_t nread, const uv_buf_t *buf)
     }
 
     server_message_t *message = decode_buf(buf, nread);
-    if (!message)
+    if (message)
     {
-        return;
-    }
-
-    switch (message->kind)
-    {
-    case JOBS:
-        for (int i = 0; i < message->jobs->len; i++)
+        switch (message->kind)
         {
-            update_templates(message->jobs->jobs[i]);
-        }
-        start_mining_if_needed();
-        break;
+        case JOBS:
+            for (int i = 0; i < message->jobs->len; i++)
+            {
+                update_templates(message->jobs->jobs[i]);
+            }
+            start_mining_if_needed();
+            break;
 
-    case SUBMIT_RESULT:
-        printf("submitted: %d -> %d: %d \n", message->submit_result->from_group, message->submit_result->to_group, message->submit_result->status);
-        break;
+        case SUBMIT_RESULT:
+            printf("submitted: %d -> %d: %d \n", message->submit_result->from_group, message->submit_result->to_group, message->submit_result->status);
+            break;
+        }
+        free_server_message_except_jobs(message);
     }
 
     free(buf->base);
-    free_server_message_except_jobs(message);
     // uv_close((uv_handle_t *) server, free_close_cb);
 }
 
@@ -412,7 +404,7 @@ int main(int argc, char **argv)
 
     uv_timer_t log_timer;
     uv_timer_init(loop, &log_timer);
-    uv_timer_start(&log_timer, log_hashrate, 5000, 5000);
+    uv_timer_start(&log_timer, log_hashrate, 5000, 20000);
 
     uv_run(loop, UV_RUN_DEFAULT);
 
